@@ -3,6 +3,7 @@
 
 const navbar=document.getElementById("nav");
 const div=document.createElement('div');
+let activeCategory=1000;
 div.innerHTML=`
 <nav class=" md:max-w-screen-md lg:max-w-screen-xl mx-auto  md:px-16 lg:px-24 py-5 my-10">
             <div class="navbar bg-base-100">
@@ -10,7 +11,7 @@ div.innerHTML=`
                   <a class="btn btn-ghost normal-case text-xl"><img src="./image/Logo.png" alt=""></a>
                 </div>
                 <div class="navbar-center hidden md:flex  lg:flex">
-                    <button class="btn">Sort by view</button>
+                    <button class="btn" onClick="hadleLoadNews(-1,true)">Sort by view</button>
                 </div>
                 <div class="navbar-end">
                   <a class="btn btn-error text-white" href="index1.html">blog</a>
@@ -39,11 +40,9 @@ const handleCategory=async()=>
     trimData.forEach(category => {
         const div =document.createElement('div')
         div.innerHTML=`
-         
-        <a onclick="hadleLoadNews('${category.category_id[1]}')"</a>
- 
         
-        <button class="btn">${category.category}</button>
+        <a class="btn" onclick="hadleLoadNews('${category.category_id}')" class="tab">${category.category}</a>
+ 
         
         `
 
@@ -57,25 +56,75 @@ const handleCategory=async()=>
 
 }
 
-const hadleLoadNews=async(category)=>
+
+function convertKToNumber(str) {
+  
+  if (str.match(/k$/i)) {
+    
+    const numericPart = parseFloat(str.replace(/k$/i, '')) || 0;
+    
+    return numericPart * 1000;
+  } else {
+    
+    return parseFloat(str) || 0;
+  }
+}
+
+
+function convertMillisecondsToHMS(milliseconds) {
+    const hours = Math.floor(milliseconds / 3600000); 
+    const minutes = Math.floor((milliseconds % 3600000) / 60000); 
+    const seconds = Math.floor((milliseconds % 60000) / 1000); 
+  
+    return { hours, minutes, seconds };
+}
+
+
+const hadleLoadNews=async(category,sorted)=>
 {
-    const response = await fetch(`https://openapi.programming-hero.com/api/videos/category/1000`)
-    const data =await response.json();
-    const cardContainer =document.getElementById('card-container')
+  const cardContainer =document.getElementById('card-container')
+  cardContainer.innerHTML=" ";
+
+  if(category==1005){
+    let img=document.createElement("IMG");
+    let p=document.createElement("p")
    
-    const trimData=data.data;
-    console.log(trimData)
+    img.src="/image/icon.png";
+    p.innerText=`Oops!! Sorry, There is no content here`   
+    cardContainer.appendChild(img);
+    cardContainer.appendChild(p)
+    console.log("IMG");
+    return;
+  }
+    category=category==-1?activeCategory:category;
+    activeCategory=category;
+    console.log(category,sorted,activeCategory);
+    const response = await fetch(`https://openapi.programming-hero.com/api/videos/category/${category}`)
+    const data =await response.json();
+   
+    let trimData=data.data;
+    if(sorted){
+      trimData.sort((a,b)=>{
+        console.log(convertKToNumber(a.others.views));
+        return convertKToNumber(a.others.views)>convertKToNumber(b.others.views)?-1:1;
+      });
+    }
+    console.log("SORTED",trimData)
    trimData.forEach((news)=>{
     console.log(news)
+    let info=convertMillisecondsToHMS(news.others.posted_date);
+    console.log(info);
     const div =document.createElement('div');
     div.innerHTML=`
 
     <div class="card  bg-base-100 shadow-xl">
-    <figure><img src="${news?.thumbnail}" alt=" "/></figure>
+    <figure><img src="${news?.thumbnail}" alt=" "/> </figure>
+    <p> ${info.hours} Hours ${info.minutes} Minuites ${info.seconds}</p>
+  
     <div class="card-body">
      <div class=" card-title flex flex-">
     
-     <img class="w-20 h-20 rounded-full" src="${news.authors[0].profile_picture}" alt="Shoes" />
+     <img class="rounded-full h-20 w-20" src="${news.authors[0].profile_picture}" alt="Shoes" />
      <p> ${news.title}</p>                 
      
      </div>
@@ -99,6 +148,8 @@ const hadleLoadNews=async(category)=>
       <div>
       <p> ${news.others.views}</p>
       </div>
+
+
     
     </div>
   </div>
@@ -114,6 +165,6 @@ const hadleLoadNews=async(category)=>
 
 
 
-hadleLoadNews();
+hadleLoadNews(1000);
 handleCategory();
 
